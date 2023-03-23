@@ -97,7 +97,7 @@ class CalibrateBasisPotreeTool extends Autodesk.Viewing.ToolInterface {
 
     //Using positions
     let cameraPosition = this.viewer.getCamera().position;
-    let rayDirection = this.viewer.clientToWorld(event.clientX, event.clientY).point.sub(cameraPosition);
+    let rayDirection = this.viewer.hitTest(event.canvasX, event.canvasY, true).intersectPoint.clone().sub(cameraPosition);
     const raycaster = new THREE.Raycaster(cameraPosition, rayDirection);
 
     let potreeExt = this.viewer.getExtension('PotreeExtension');
@@ -111,12 +111,12 @@ class CalibrateBasisPotreeTool extends Autodesk.Viewing.ToolInterface {
       let intersection = intersectschildren.reduce((prev, curr) => prev.distanceToRay < curr.distanceToRay ? prev : curr);
 
       //This gets the closest point to the camera
-      // let intersection = closestPoints.reduce((prev, curr) => prev.point.distanceTo(cameraPosition) < curr.point.distanceTo(cameraPosition) ? prev : curr);
+      // let intersection = intersectschildren.reduce((prev, curr) => prev.point.distanceTo(cameraPosition) < curr.point.distanceTo(cameraPosition) ? prev : curr);
 
       if(button === 0 && !!intersection.point){
         this.points.push(intersection.point.clone());
         let addedPointIndex = this.points.length - 1;
-        this.renderSprite(this.points[addedPointIndex], addedPointIndex + 10000, addedPointIndex)
+        this.renderSprite(this.points[addedPointIndex], addedPointIndex + 10000, addedPointIndex);
 
         if (this.points.length == 4) {
           if (this.arePointsCoplanar()) {
