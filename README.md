@@ -19,3 +19,5 @@ With all points defined in the pointcloud, we can focus on finding the sorrelate
 And with that, we have the synchronized models based on the obtained points:
 
 ![sync](./images/sync_unprecise.gif)
+
+GLB stone lion from https://sketchfab.com/3d-models/stone-lion-bf38a87d03834065a5f25c29a1cd7273
