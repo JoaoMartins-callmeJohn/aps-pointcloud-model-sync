@@ -10,7 +10,7 @@ As of now, it's using Viewer's hitTest function to obtain the point from the poi
 
 It lacks fine-tuning on the algorithm for better precision, as you can see from pickin the points below:
 
-![pick points](./images/pick_potree_points.gif)
+![pick points](./images/precision_hittest.gif)
 
 With all points defined in the pointcloud, we can focus on finding the sorrelated points in the model:
 
