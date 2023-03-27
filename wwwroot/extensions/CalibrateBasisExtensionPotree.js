@@ -97,8 +97,27 @@ class CalibrateBasisPotreeTool extends Autodesk.Viewing.ToolInterface {
 
     //Using positions
     let cameraPosition = this.viewer.getCamera().position;
-    let rayDirection = this.viewer.hitTest(event.canvasX, event.canvasY, true).intersectPoint.clone().sub(cameraPosition);
-    const raycaster = new THREE.Raycaster(cameraPosition, rayDirection);
+
+    //Viewer camera based raycaster
+    const { left: startX, top: startY, right: endX, bottom: endY } = this.viewer.impl.getCanvasBoundingClientRect();
+    let x_component = (event.clientX - startX) / (endX - startX) * 2 - 1;
+    let y_component = (event.clientY - startY) / (startY - endY) * 2 + 1;
+    let raycaster = new THREE.Raycaster();
+    let vector2D = new THREE.Vector2(x_component, y_component);
+
+    // let helperCamera = new THREE.OrthographicCamera(this.viewer.impl.camera.left, this.viewer.impl.camera.right, this.viewer.impl.camera.top, this.viewer.impl.camera.bottom, this.viewer.impl.camera.near, this.viewer.impl.camera.far);
+    let helperCamera = new THREE.PerspectiveCamera(this.viewer.impl.camera.fov, this.viewer.impl.camera.aspect, this.viewer.impl.camera.near, this.viewer.impl.camera.far);
+    helperCamera.position.set(this.viewer.impl.camera.position.x, this.viewer.impl.camera.position.y, this.viewer.impl.camera.position.z);
+    helperCamera.quaternion.set(this.viewer.impl.camera.quaternion._x, this.viewer.impl.camera.quaternion._y, this.viewer.impl.camera.quaternion._z, this.viewer.impl.camera.quaternion._w);
+    helperCamera.up.set(this.viewer.impl.camera.up.x, this.viewer.impl.camera.up.y, this.viewer.impl.camera.up.z);
+
+    for (let i = 0; i < 15; i++) {
+      helperCamera.matrixWorld.elements[i] = this.viewer.impl.camera.matrixWorld.elements[i];
+    }
+
+    raycaster.setFromCamera(vector2D, helperCamera);
+    raycaster.ray.origin.set(helperCamera.position.x, helperCamera.position.y, helperCamera.position.z);
+
     raycaster.params = {
       Mesh: {},
       Line: { threshold: 1 },
@@ -115,10 +134,10 @@ class CalibrateBasisPotreeTool extends Autodesk.Viewing.ToolInterface {
       let intersectschildren = raycaster.intersectObjects(octree.children);
 
       //This gets the closest point to the ray
-      // let intersection = intersectschildren.reduce((prev, curr) => prev.distanceToRay < curr.distanceToRay ? prev : curr);
+      let intersection = intersectschildren.reduce((prev, curr) => prev.distanceToRay < curr.distanceToRay ? prev : curr);
 
       //This gets the closest point to the camera
-      let intersection = intersectschildren.reduce((prev, curr) => prev.point.distanceTo(cameraPosition) < curr.point.distanceTo(cameraPosition) ? prev : curr);
+      // let intersection = intersectschildren.reduce((prev, curr) => prev.point.distanceTo(cameraPosition) < curr.point.distanceTo(cameraPosition) ? prev : curr);
 
       if (button === 0 && !!intersection.point) {
         this.points.push(intersection.point.clone());
