@@ -23,19 +23,19 @@ class CalibrateBasis3DTilesTool extends Autodesk.Viewing.ToolInterface {
     // this.snapper = new Autodesk.Viewing.Extensions.Snapping.Snapper(this.viewer, { renderSnappedGeometry: false, renderSnappedTopology: false });
     // this.viewer.toolController.registerTool(this.snapper);
     // this.viewer.toolController.activateTool(this.snapper.getName());
-    console.log('CalibrateBasisPotreeTool registered.');
+    console.log('CalibrateBasis3DTilesTool registered.');
   }
 
   deregister() {
     // this.viewer.toolController.deactivateTool(this.snapper.getName());
     // this.viewer.toolController.deregisterTool(this.snapper);
     // this.snapper = null;
-    console.log('CalibrateBasisPotreeTool unregistered.');
+    console.log('CalibrateBasis3DTilesTool unregistered.');
   }
 
   activate(name, viewer) {
     if (!this.active) {
-      console.log('CalibrateBasisPotreeTool activated.');
+      console.log('CalibrateBasis3DTilesTool activated.');
       this.active = true;
 
       this.prepareDataViz();
@@ -66,7 +66,7 @@ class CalibrateBasis3DTilesTool extends Autodesk.Viewing.ToolInterface {
 
   deactivate(name) {
     if (this.active) {
-      console.log('CalibrateBasisPotreeTool deactivated.');
+      console.log('CalibrateBasis3DTilesTool deactivated.');
       this.active = false;
     }
   }
@@ -80,23 +80,13 @@ class CalibrateBasis3DTilesTool extends Autodesk.Viewing.ToolInterface {
       return false;
     }
 
-    // this.snapper.indicator.clearOverlays();
-    // if (this.snapper.isSnapped()) {
-    //   this.viewer.clearSelection();
-    //   const result = this.snapper.getSnapResult();
-    //   const { SnapType } = Autodesk.Viewing.MeasureCommon;
-    //   this.snapper.indicator.render(); // Show indicator when snapped to a vertex
-    // }
     return false;
   }
 
-  handleSingleClick(event, button) {
+  async handleSingleClick(event, button) {
     if (!this.active) {
       return false;
     }
-
-    //Using positions
-    let cameraPosition = this.viewer.getCamera().position;
 
     //Viewer camera based raycaster
     const { left: startX, top: startY, right: endX, bottom: endY } = this.viewer.impl.getCanvasBoundingClientRect();
@@ -122,19 +112,17 @@ class CalibrateBasis3DTilesTool extends Autodesk.Viewing.ToolInterface {
       Mesh: {},
       Line: { threshold: 1 },
       LOD: {},
-      PointCloud: { threshold: 0.05 },
+      PointCloud: { threshold: 0.1 },
       Sprite: {}
     };
 
-    let potreeExt = this.viewer.getExtension('PotreeExtension');
-    let ptCloudOctrees = potreeExt._group.children;
 
-    ptCloudOctrees.forEach(octree => {
-      // calculate objects intersecting the picking ray
-      let intersectschildren = raycaster.intersectObjects(octree.children);
+    let threeTilesext = this.viewer.getExtension('ThreeTilesExtension');
+    let tileSets = threeTilesext.tilesets;
+    for (const tileSet of tileSets) {
+      let points = await this.obtainPoints([], tileSet.root, raycaster);
 
-      //This gets the closest point to the ray
-      let intersection = intersectschildren.reduce((prev, curr) => prev.distanceToRay < curr.distanceToRay ? prev : curr);
+      let intersection = points.reduce((prev, curr) => prev.distanceToRay < curr.distanceToRay ? prev : curr);
 
       //This gets the closest point to the camera
       // let intersection = intersectschildren.reduce((prev, curr) => prev.point.distanceTo(cameraPosition) < curr.point.distanceTo(cameraPosition) ? prev : curr);
@@ -154,27 +142,34 @@ class CalibrateBasis3DTilesTool extends Autodesk.Viewing.ToolInterface {
           return true; // Stop the event from going to other tools in the stack
         }
       }
-    });
+    }
 
-    //Below is for Viewer meshes
-    // if (button === 0 && this.snapper.isSnapped()) {
-    //   const result = this.snapper.getSnapResult();
-    //   const { SnapType } = Autodesk.Viewing.MeasureCommon;
-    //   this.points.push(result.intersectPoint.clone());
-    //   let addedPointIndex = this.points.length - 1;
-    //   this.renderSprite(this.points[addedPointIndex], addedPointIndex + 10000, addedPointIndex)
-
-    //   if (this.points.length == 4) {
-    //     if (this.arePointsCoplanar()) {
-    //       return true;
-    //     }
-
-    //     this.updatePoints();
-    //     this.resetPoints();
-    //     return true; // Stop the event from going to other tools in the stack
-    //   }
-    // }
     return false;
+  }
+
+  async obtainPoints(points, tile, raycaster) {
+    //Check if raycast intersects box
+    //If not, break loop
+    if (!raycaster.ray.intersectsBox(tile.box)) {
+      return points;
+    }
+    //Check if exists points
+    //If exists, add the new intersections
+    let intersectedPoints;
+    if (tile.points instanceof THREE.PointCloud) {
+      intersectedPoints = raycaster.intersectObject(tile.points);
+    }
+    //Check if exists children
+    //If exists, loop thorugh them
+    if (tile.children.length > 0) {
+      for (const newTile of tile.children) {
+        let newIntersectedPoints = await this.obtainPoints(intersectedPoints, newTile, raycaster);
+        newIntersectedPoints ? intersectedPoints.push(...newIntersectedPoints) : null;
+      }
+    }
+    points.push(...intersectedPoints);
+
+    return points;
   }
 
   arePointsCoplanar() {
@@ -233,11 +228,11 @@ class CalibrateBasis3DTilesTool extends Autodesk.Viewing.ToolInterface {
 
 }
 
-class CalibrateBasisPotreeExtension extends Autodesk.Viewing.Extension {
+class CalibrateBasis3DTilesExtension extends Autodesk.Viewing.Extension {
   constructor(viewer, options) {
     super(viewer, options);
     this._button = null;
-    this.tool = new CalibrateBasisPotreeTool(viewer);
+    this.tool = new CalibrateBasis3DTilesTool(viewer);
     this._onObjectTreeCreated = (ev) => this.onModelLoaded(ev.model);
   }
 
@@ -300,4 +295,4 @@ class CalibrateBasisPotreeExtension extends Autodesk.Viewing.Extension {
   }
 }
 
-Autodesk.Viewing.theExtensionManager.registerExtension('CalibrateBasisPotreeExtension', CalibrateBasisPotreeExtension);
+Autodesk.Viewing.theExtensionManager.registerExtension('CalibrateBasis3DTilesExtension', CalibrateBasis3DTilesExtension);

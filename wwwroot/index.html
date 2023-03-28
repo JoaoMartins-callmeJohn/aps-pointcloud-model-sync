@@ -84,7 +84,7 @@
           document.getElementById("viewersContainer").appendChild(viewerDiv);
 
           const config = {
-            extensions: ['CalibrateBasisExtension', 'Autodesk.DataVisualization', 'ThreeTilesExtension']
+            extensions: ['CalibrateBasisExtension', 'Autodesk.DataVisualization', 'ThreeTilesExtension', 'CalibrateBasis3DTilesExtension']
           };
           // const config = {
           //   extensions: ['Autodesk.DataVisualization', 'CalibrateBasisPotreeExtension', 'PotreeExtension']
@@ -149,9 +149,9 @@
           targetBaseOrigin = targetViewer.getExtension('CalibrateBasisExtension').tool.baseOrigin;
         }
         else {
-          targetViewerBase = targetViewer.getExtension('CalibrateBasisPotreeExtension').tool.spaceBaseNormal.clone();
-          targetViewerVector = targetViewer.getExtension('CalibrateBasisPotreeExtension').tool.obliqueVector.clone();
-          targetBaseOrigin = targetViewer.getExtension('CalibrateBasisPotreeExtension').tool.baseOrigin;
+          targetViewerBase = targetViewer.getExtension('CalibrateBasis3DTilesExtension').tool.spaceBaseNormal.clone();
+          targetViewerVector = targetViewer.getExtension('CalibrateBasis3DTilesExtension').tool.obliqueVector.clone();
+          targetBaseOrigin = targetViewer.getExtension('CalibrateBasis3DTilesExtension').tool.baseOrigin;
         }
 
 
@@ -163,9 +163,9 @@
           originBaseOrigin = originViewer.getExtension('CalibrateBasisExtension').tool.baseOrigin;
         }
         else {
-          originViewerBase = originViewer.getExtension('CalibrateBasisPotreeExtension').tool.spaceBaseNormal.clone();
-          originViewerVector = originViewer.getExtension('CalibrateBasisPotreeExtension').tool.obliqueVector.clone();
-          originBaseOrigin = originViewer.getExtension('CalibrateBasisPotreeExtension').tool.baseOrigin;
+          originViewerBase = originViewer.getExtension('CalibrateBasis3DTilesExtension').tool.spaceBaseNormal.clone();
+          originViewerVector = originViewer.getExtension('CalibrateBasis3DTilesExtension').tool.obliqueVector.clone();
+          originBaseOrigin = originViewer.getExtension('CalibrateBasis3DTilesExtension').tool.baseOrigin;
         }
 
         let rotationMatrix = findRotation(targetViewerBase, originViewerBase);
@@ -183,7 +183,7 @@
   function isCalibrationAvailable() {
     let isCalibrationAvailable = true;
     viewers.forEach(v => {
-      if (!v.getExtension('CalibrateBasisExtension').tool.spaceBaseNormal && !v.getExtension('CalibrateBasisPotreeExtension').tool.spaceBaseNormal)
+      if (!v.getExtension('CalibrateBasisExtension').tool.spaceBaseNormal && !v.getExtension('CalibrateBasis3DTilesExtension').tool.spaceBaseNormal)
         isCalibrationAvailable = false;
     });
     return isCalibrationAvailable;
