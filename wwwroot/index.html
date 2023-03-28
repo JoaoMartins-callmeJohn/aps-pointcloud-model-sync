@@ -46,9 +46,8 @@
   </div>
   <script src="https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/viewer3D.js"></script>
   <script src="./extensions/CalibrateBasisExtension.js"></script>
-  <script src="./extensions/CalibrateBasisExtensionPotree.js"></script>
-  <script src="./extensions/potree.js"></script>
-  <script src="./extensions/PotreeExtension.js"></script>
+  <script src="./extensions/CalibrateBasisExtension3dTiles.js"></script>
+  <script type="module" language="JavaScript" src="./extensions/ThreeTiles.ext.mjs"></script>
 </body>
 
 <script>
@@ -64,9 +63,9 @@
       return response.json();
     }).then(function (token) {
 
-      //Urns Office.rvt
-      let urns = ['dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6cmVuZGVyY29tcGFyZWpwb21wb3RyZWUvc3RvbmVfbGlvbi5nbGI','dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6cmVuZGVyY29tcGFyZWpwb21wb3RyZWUvT2ZmaWNlLnJ2dA'];
-      
+      //Urns Empty.rvt & Kickstart.rvt
+      let urns = ['dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLklHTGFfSjVXUkJhb3RyZTl1eS0wM3c/dmVyc2lvbj0x', 'dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLnc1Q3lCa1ZQUUwyN1hBMHlOYWNfekE/dmVyc2lvbj0x'];
+
       const options = {
         env: 'AutodeskProduction',
         accessToken: token.access_token
@@ -85,7 +84,7 @@
           document.getElementById("viewersContainer").appendChild(viewerDiv);
 
           const config = {
-            extensions: ['CalibrateBasisExtension', 'Autodesk.DataVisualization', 'CalibrateBasisPotreeExtension', 'PotreeExtension']
+            extensions: ['CalibrateBasisExtension', 'Autodesk.DataVisualization', 'ThreeTilesExtension']
           };
           // const config = {
           //   extensions: ['Autodesk.DataVisualization', 'CalibrateBasisPotreeExtension', 'PotreeExtension']
@@ -100,12 +99,10 @@
             viewer.loadDocumentNode(doc, viewables);
           });
 
-          if(atob(urn).includes('Office.rvt')){
-            let potreeUrl = '/extensions/data/lion_takanawa/cloud.js';
+          if (atob(urn).includes('vf.w5CyBkVPQL27XA0yNac_zA')) {
             viewer.addEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, () => {
-              loadPotreeSample(viewer, potreeUrl);
-              //Just to simplify our scene
-              viewer.isolate([1880]);
+              let urn_tiles = 'dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLl9QaVVaUXg3VFA2NmRlTkY1alNPR3c/dmVyc2lvbj0x';
+              viewer.getExtension('ThreeTilesExtension').addURN(urn_tiles, { showDebugBoxes: false, pointSize: 5, geomScale: 0.04 });
             });
           }
 
@@ -116,7 +113,7 @@
     });
   }
 
-  async function loadPotreeSample(viewer, potreeUrl){
+  async function loadPotreeSample(viewer, potreeUrl) {
     const potreeExtension = viewer.getExtension('PotreeExtension');
     potreeExtension.url = potreeUrl;
     let position = new THREE.Vector3(0, 0, -25);
@@ -146,26 +143,26 @@
       if (isCalibrationAvailable()) {
         let targetViewer = viewers.find(v => v !== currentViewer);
         let targetViewerBase, targetViewerVector, targetBaseOrigin;
-        if(!!targetViewer.getExtension('CalibrateBasisExtension').tool.spaceBaseNormal){
+        if (!!targetViewer.getExtension('CalibrateBasisExtension').tool.spaceBaseNormal) {
           targetViewerBase = targetViewer.getExtension('CalibrateBasisExtension').tool.spaceBaseNormal.clone();
           targetViewerVector = targetViewer.getExtension('CalibrateBasisExtension').tool.obliqueVector.clone();
           targetBaseOrigin = targetViewer.getExtension('CalibrateBasisExtension').tool.baseOrigin;
         }
-        else{
+        else {
           targetViewerBase = targetViewer.getExtension('CalibrateBasisPotreeExtension').tool.spaceBaseNormal.clone();
           targetViewerVector = targetViewer.getExtension('CalibrateBasisPotreeExtension').tool.obliqueVector.clone();
           targetBaseOrigin = targetViewer.getExtension('CalibrateBasisPotreeExtension').tool.baseOrigin;
         }
-        
+
 
         let originViewer = currentViewer;
         let originViewerBase, originViewerVector, originBaseOrigin;
-        if(!!originViewer.getExtension('CalibrateBasisExtension').tool.spaceBaseNormal){
+        if (!!originViewer.getExtension('CalibrateBasisExtension').tool.spaceBaseNormal) {
           originViewerBase = originViewer.getExtension('CalibrateBasisExtension').tool.spaceBaseNormal.clone();
           originViewerVector = originViewer.getExtension('CalibrateBasisExtension').tool.obliqueVector.clone();
           originBaseOrigin = originViewer.getExtension('CalibrateBasisExtension').tool.baseOrigin;
         }
-        else{
+        else {
           originViewerBase = originViewer.getExtension('CalibrateBasisPotreeExtension').tool.spaceBaseNormal.clone();
           originViewerVector = originViewer.getExtension('CalibrateBasisPotreeExtension').tool.obliqueVector.clone();
           originBaseOrigin = originViewer.getExtension('CalibrateBasisPotreeExtension').tool.baseOrigin;
@@ -173,8 +170,6 @@
 
         let rotationMatrix = findRotation(targetViewerBase, originViewerBase);
         let scaleMatrix = findScale(targetViewerVector, originViewerVector);
-        // let originBaseOrigin = originViewer.getExtension('CalibrateBasisExtension').tool.baseOrigin;
-        // let targetBaseOrigin = targetViewer.getExtension('CalibrateBasisExtension').tool.baseOrigin;
         let newTarget = originViewer.getCamera().target.clone().sub(originBaseOrigin).applyMatrix4(rotationMatrix).applyMatrix4(scaleMatrix).add(targetBaseOrigin);
         let newPosition = originViewer.getCamera().position.clone().sub(originBaseOrigin).applyMatrix4(rotationMatrix).applyMatrix4(scaleMatrix).add(targetBaseOrigin);
         let newUpVector = originViewer.getCamera().up.clone().applyMatrix4(rotationMatrix);
